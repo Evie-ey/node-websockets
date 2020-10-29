@@ -1,25 +1,92 @@
-'use strict';
+var express = require('express');
+var app = express();
+// var expressWs = require('express-ws')(app);
+var http = require('http').createServer(app);
+var io = require('socket.io')(http);
 
-const express = require('express');
-const { Server } = require('ws');
+const cors = require('cors');
+var uuidv4 = require('uuid').v4;
 
-const PORT = process.env.PORT || 3000;
-const INDEX = '/index.html';
-const cors = require('cors')
-const server = express()
-  .use((req, res) => res.sendFile(INDEX, { root: __dirname }))
-  .use(cors)
-  .listen(PORT, () => console.log(`Listening on ${PORT}`));
+let rooms = {};
+let chatLogs = {};
+let requests = []
 
-
-const wss = new Server({ server });
-wss.on('connection', (ws) => {
-  console.log('Client connected');
-  ws.on('close', () => console.log('Client disconnected'));
+app.use(cors());
+const message = {
+  "id":"2efff104-a640-43b6-549b-08d879923d62",
+  "initiator":"Evelyne Namwoyo",
+  "initiatorId":"a8366738-5dad-451b-8e70-f86810d6f037",
+  "initiatorEmail":"evelyne@laboremus.no",
+  "participantId":"6527ae7e-09c6-4c8f-ac2f-a60685efe720",
+  "receivedAt":"2020-10-26T12:33:47.4529644",
+  "submittedAt":"2020-10-26T12:33:47.7311262",
+  "receivedFromNira":"2020-10-26T12:33:48.331357",
+  "billingUpdated":"2020-10-26T12:33:50.0216534",
+  "requestStatus":"Completed",
+  "surname":"NANSIKOMBI",
+  "givenNames":"ROSE",
+  "cardNumber":"000078675",
+  "maskedCardNumber":"00007****",
+  "nin":"CM88456101R55E",
+  "maskedNin":"CM8845********",
+  "dateOfBirth":"2020-10-04T00:00:00",
+  "resultJson":{
+     "matchingStatus":null,
+     "cardStatus":null,
+     "status":"Error",
+     "error":{
+        "code":"320",
+        "message":"Person not found, NIN: CM88456101R55E"
+     },
+     "isError":true,
+     "ninStatus":"Person not found, NIN: CM88456101R55E"
+  }
+}
+app.get('/room', function (req, res, next) {
+	const room = {
+		name: req.query.name,
+		id: uuidv4()
+	};
+	rooms[room.id] = room;
+	chatLogs[room.id] = [];
+	res.json(room);
 });
 
-setInterval(() => {
-  wss.clients.forEach((client) => {
-    client.send(new Date().toTimeString(), 'hello');
-  });
-}, 1000);
+app.get('/room/:roomId', function (req, res, next) {
+	const roomId = req.params.roomId;
+	const response = {
+		...rooms[roomId],
+		chats: chatLogs[roomId]
+	};
+	res.json(response);
+});
+
+// app.ws('/', function (ws, req) {
+// 	console.log("socket")
+// 	ws.on('connection', function(socket){
+// 		console.log("conect")
+// 	})
+// 	ws.on('essage', function (msg) {
+// 		console.log(msg);
+// 	});
+// });
+
+// app.listen(5000);
+
+io.on('connection', function(socket){
+	socket.on('event://send-request', function(ninReq){
+		console.log("got", ninReq);
+		
+    const payload = JSON.parse(ninReq);
+    [...requests, payload]
+		// if(chatLogs[payload.roomID]){
+		// 	chatLogs[msg.roomID].push(payload.data);
+		// }
+		
+		socket.broadcast.emit('event://get-request', ninReq);
+	})
+});
+  
+http.listen(5000, function(){
+	console.log('listening on *:5000');
+});
