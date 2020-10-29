@@ -10,7 +10,7 @@ const server = express()
   .use((req, res) => res.sendFile(INDEX, { root: __dirname }))
   .use(cors)
   .listen(PORT, () => console.log(`Listening on ${PORT}`));
-// server.use(cors);
+
 
 const wss = new Server({ server });
 wss.on('connection', (ws) => {
