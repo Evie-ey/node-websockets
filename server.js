@@ -8,8 +8,9 @@ const INDEX = '/index.html';
 const cors = require('cors')
 const server = express()
   .use((req, res) => res.sendFile(INDEX, { root: __dirname }))
+  .use(cors)
   .listen(PORT, () => console.log(`Listening on ${PORT}`));
-server.use(cors);
+// server.use(cors);
 
 const wss = new Server({ server });
 wss.on('connection', (ws) => {
@@ -19,6 +20,6 @@ wss.on('connection', (ws) => {
 
 setInterval(() => {
   wss.clients.forEach((client) => {
-    client.send(new Date().toTimeString());
+    client.send(new Date().toTimeString(), 'hello');
   });
 }, 1000);
